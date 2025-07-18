@@ -1,0 +1,116 @@
+### Health Check
+GET http://localhost:3001/health
+
+### Register a new customer
+POST http://localhost:3001/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "password": "password123",
+  "role": "customer"
+}
+
+### Register an admin user
+POST http://localhost:3001/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Admin User",
+  "email": "admin@example.com",
+  "password": "admin123",
+  "role": "admin"
+}
+
+### Login as customer
+POST http://localhost:3001/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "password123"
+}
+
+### Login as admin
+POST http://localhost:3001/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "admin123"
+}
+
+### Get user profile (requires authentication)
+GET http://localhost:3001/api/users/profile
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+### Get all users (admin only) - Basic request
+GET http://localhost:3001/api/users
+Authorization: Bearer YOUR_ADMIN_JWT_TOKEN_HERE
+
+### Get all users with pagination (admin only)
+GET http://localhost:3001/api/users?page=1&limit=5
+Authorization: Bearer YOUR_ADMIN_JWT_TOKEN_HERE
+
+### Get all users with search (admin only)
+GET http://localhost:3001/api/users?search=john&page=1&limit=10
+Authorization: Bearer YOUR_ADMIN_JWT_TOKEN_HERE
+
+### Get users by role filter (admin only)
+GET http://localhost:3001/api/users?role=admin&page=1&limit=10
+Authorization: Bearer YOUR_ADMIN_JWT_TOKEN_HERE
+
+### Get users with combined filters (admin only)
+GET http://localhost:3001/api/users?search=admin&role=admin&page=1&limit=5
+Authorization: Bearer YOUR_ADMIN_JWT_TOKEN_HERE
+
+### Create admin user (admin only)
+POST http://localhost:3001/api/users/admin
+Content-Type: application/json
+Authorization: Bearer YOUR_ADMIN_JWT_TOKEN_HERE
+
+{
+  "name": "New Admin",
+  "email": "newadmin@example.com",
+  "password": "newadmin123"
+}
+
+### Get all products (public)
+GET http://localhost:3001/api/products
+
+### Get all products with pagination and filtering
+GET http://localhost:3001/api/products?page=1&limit=5&category=food&sortBy=price&sortOrder=asc
+
+### Get product by ID (public)
+GET http://localhost:3001/api/products/PRODUCT_ID_HERE
+
+### Create a new product (admin only)
+POST http://localhost:3001/api/products
+Content-Type: application/json
+Authorization: Bearer YOUR_ADMIN_JWT_TOKEN_HERE
+
+{
+  "name": "Premium Dog Food",
+  "description": "High-quality nutrition for your beloved pet",
+  "category": ["food", "dogs"],
+  "brand": "PetNutrition",
+  "price": 29.99,
+  "stock": 100,
+  "images": ["https://example.com/dog-food.jpg"],
+  "isFeatured": true
+}
+
+### Update a product (admin only)
+PUT http://localhost:3001/api/products/PRODUCT_ID_HERE
+Content-Type: application/json
+Authorization: Bearer YOUR_ADMIN_JWT_TOKEN_HERE
+
+{
+  "price": 27.99,
+  "stock": 150
+}
+
+### Delete a product (admin only)
+DELETE http://localhost:3001/api/products/PRODUCT_ID_HERE
+Authorization: Bearer YOUR_ADMIN_JWT_TOKEN_HERE 

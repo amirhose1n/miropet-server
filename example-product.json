@@ -1,0 +1,31 @@
+{
+  "name": "غذای خشک سگ پریمیوم",
+  "description": "غذای کامل و مغذی برای سگ‌های بزرگسال",
+  "category": ["غذا", "سگ"],
+  "brand": "پت نوتریشن",
+  "variations": [
+    {
+      "price": 150000,
+      "stock": 25,
+      "images": ["https://example.com/dog-food-1.jpg"]
+    },
+    {
+      "color": "قهوه‌ای",
+      "size": "متوسط",
+      "price": 280000,
+      "weight": "5 کیلوگرم",
+      "stock": 15,
+      "images": [
+        "https://example.com/dog-food-medium-1.jpg",
+        "https://example.com/dog-food-medium-2.jpg"
+      ]
+    },
+    {
+      "size": "بزرگ",
+      "price": 500000,
+      "stock": 10,
+      "images": ["https://example.com/dog-food-large.jpg"]
+    }
+  ],
+  "isFeatured": true
+}

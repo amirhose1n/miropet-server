@@ -1,0 +1,74 @@
+### Test Delivery Methods API
+
+### 1. Get all delivery methods (public)
+GET http://localhost:3001/api/delivery-methods
+Content-Type: application/json
+
+### 2. Get delivery methods for admin (requires admin auth)
+GET http://localhost:3001/api/delivery-methods/admin/all
+Content-Type: application/json
+Authorization: Bearer YOUR_ADMIN_TOKEN
+
+### 3. Create new delivery method (requires admin auth)
+POST http://localhost:3001/api/delivery-methods/admin
+Content-Type: application/json
+Authorization: Bearer YOUR_ADMIN_TOKEN
+
+{
+  "name": "ارسال ویژه",
+  "subtitle": "ارسال اکسپرس ۲۴ ساعته",
+  "price": 120000,
+  "validationDesc": "ارسال در کمتر از ۲۴ ساعت",
+  "isEnabled": true
+}
+
+### 4. Update delivery method (requires admin auth)
+PUT http://localhost:3001/api/delivery-methods/admin/DELIVERY_METHOD_ID
+Content-Type: application/json
+Authorization: Bearer YOUR_ADMIN_TOKEN
+
+{
+  "name": "ارسال ویژه",
+  "subtitle": "ارسال اکسپرس ۲۴ ساعته - بروزرسانی شده",
+  "price": 130000,
+  "validationDesc": "ارسال در کمتر از ۲۴ ساعت - ویرایش شده",
+  "isEnabled": true
+}
+
+### 5. Toggle delivery method status (requires admin auth)
+PATCH http://localhost:3001/api/delivery-methods/admin/DELIVERY_METHOD_ID/toggle
+Content-Type: application/json
+Authorization: Bearer YOUR_ADMIN_TOKEN
+
+### 6. Delete delivery method (requires admin auth)
+DELETE http://localhost:3001/api/delivery-methods/admin/DELIVERY_METHOD_ID
+Content-Type: application/json
+Authorization: Bearer YOUR_ADMIN_TOKEN
+
+### 7. Test login with sessionId (for cart merging)
+POST http://localhost:3001/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "customer@example.com",
+  "password": "password123",
+  "sessionId": "guest-session-id-12345"
+}
+
+### 8. Test checkout with delivery method
+POST http://localhost:3001/api/orders/checkout
+Content-Type: application/json
+Authorization: Bearer YOUR_CUSTOMER_TOKEN
+
+{
+  "shippingAddress": {
+    "fullName": "علی محمدی",
+    "phone": "09123456789",
+    "address": "تهران، خیابان ولیعصر، پلاک ۱۰۰",
+    "city": "تهران",
+    "postalCode": "1234567890"
+  },
+  "paymentMethod": "card",
+  "deliveryMethodId": "DELIVERY_METHOD_ID",
+  "customerNotes": "لطفاً با احتیاط بسته‌بندی شود"
+} 
