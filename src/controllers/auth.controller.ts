@@ -75,11 +75,12 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         token,
       },
     });
+    return;
   } catch (error) {
     res.status(500).json({
       success: false,
       message: "Registration failed",
-      error: process.env.NODE_ENV === "development" ? error : undefined,
+      error: process.env.NODE_ENV === "development" ? error : error,
     });
   }
 };
@@ -199,7 +200,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     res.status(500).json({
       success: false,
       message: "Login failed",
-      error: process.env.NODE_ENV === "development" ? error : undefined,
+      error: process.env.NODE_ENV === "development" ? error : error,
     });
     return;
   }
