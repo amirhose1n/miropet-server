@@ -1,17 +1,20 @@
 import crypto from "crypto";
 import { Request, Response } from "express";
 
-export const getImageKitAuth = async (req: Request, res: Response) => {
+//@ts-check
+export const getImageKitAuth = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
-    const privateKey = process.env.IMAGEKIT_PRIVATE_KEY;
-
-    console.log({ privateKey });
+    const privateKey = process.env.IMAGEKIT_PRIVATE_KEY || "";
 
     if (!privateKey) {
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         message: "ImageKit private key not configured",
       });
+      return;
     }
 
     const token = Date.now().toString();
