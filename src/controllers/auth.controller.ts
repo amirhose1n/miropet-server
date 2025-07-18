@@ -107,7 +107,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       console.log(`Login failed: User not found for email ${email}`);
       res.status(401).json({
         success: false,
-        message: "Invalid email or password",
+        message: "Invalid email or passssssssssword",
       });
       return;
     }
