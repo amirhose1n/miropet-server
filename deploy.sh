@@ -20,21 +20,17 @@ npm install
 echo "🔨 Building application..."
 npm run build
 
-# Stop existing containers
-echo "🛑 Stopping existing containers..."
-docker-compose down
+# Start the application using PM2
+echo "🚀 Starting application with PM2..."
+pm2 restart miropet-api || pm2 start dist/server.js --name miropet-api
 
-# Build and start containers
-echo "🐳 Building and starting containers..."
-docker-compose up -d --build
+# Wait for application to be ready
+echo "⏳ Waiting for application to be ready..."
+sleep 5
 
-# Wait for containers to be healthy
-echo "⏳ Waiting for containers to be ready..."
-sleep 10
-
-# Check if containers are running
-echo "🔍 Checking container status..."
-docker-compose ps
+# Check if application is running
+echo "🔍 Checking application status..."
+pm2 status
 
 # Test the API
 echo "🧪 Testing API health endpoint..."
