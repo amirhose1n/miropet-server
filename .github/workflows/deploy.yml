@@ -32,11 +32,8 @@ jobs:
             # Build the application
             npm run build
 
-            # Restart the application using PM2 (if using PM2)
-            # pm2 restart miropet-api || pm2 start dist/server.js --name miropet-api
-
-            # Or restart using systemctl (if using systemd)
-            # sudo systemctl restart miropet-api
+            # Start the application using PM2
+            pm2 restart miropet-api || pm2 start dist/server.js --name miropet-api
 
             # Or simply restart the Docker containers
             docker-compose down
