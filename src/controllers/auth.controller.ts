@@ -101,6 +101,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     // Find user by email
     const user = await User.findOne({ email });
+
     if (!user) {
       res.status(401).json({
         success: false,
@@ -111,6 +112,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     // Check password
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+
     if (!isPasswordValid) {
       res.status(401).json({
         success: false,
@@ -121,6 +123,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     // Generate JWT token
     const jwtSecret = process.env.JWT_SECRET;
+
     if (!jwtSecret) {
       throw createError("JWT secret not configured", 500);
     }
@@ -134,6 +137,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     // Merge guest cart if sessionId is provided
     let cartMerged = false;
+
     if (sessionId) {
       try {
         const { Cart } = await import("../models/Cart.model");
@@ -190,12 +194,14 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         cartMerged,
       },
     });
+    return;
   } catch (error) {
     res.status(500).json({
       success: false,
       message: "Login failed",
       error: process.env.NODE_ENV === "development" ? error : undefined,
     });
+    return;
   }
 };
 

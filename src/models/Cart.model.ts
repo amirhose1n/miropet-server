@@ -55,11 +55,9 @@ const cartSchema = new Schema<ICart>({
   userId: {
     type: Schema.Types.ObjectId,
     ref: "User",
-    sparse: true, // Allows multiple null values for guest carts
   },
   sessionId: {
     type: String,
-    sparse: true, // For guest carts
   },
   items: [cartItemSchema],
   totalItems: {
