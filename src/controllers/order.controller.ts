@@ -380,6 +380,7 @@ export const getOrders = async (req: Request, res: Response): Promise<void> => {
         },
       },
     });
+    return;
   } catch (error: any) {
     console.error("Get orders error:", error);
     res.status(500).json({
@@ -387,6 +388,7 @@ export const getOrders = async (req: Request, res: Response): Promise<void> => {
       message: "Failed to fetch orders",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
+    return;
   }
 };
 
