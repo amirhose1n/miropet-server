@@ -75,22 +75,32 @@ app.get("/health", (req, res) => {
   });
 });
 
+// POST health endpoint for testing
 app.post("/health", (req, res) => {
   res.status(200).json({
     status: "OK",
-    message: "MiroPet API is running",
+    message: "POST request to health endpoint is working",
     timestamp: new Date().toISOString(),
+    method: "POST",
+    body: req.body,
   });
 });
 
 // Error handling middleware
 app.use(errorHandler);
 
-// 404 handler
+// 404 handler with debugging
 app.use("*", (req, res) => {
+  console.log(
+    `404 - Method: ${req.method}, URL: ${req.url}, Headers:`,
+    req.headers
+  );
   res.status(404).json({
     success: false,
     message: "Route not found",
+    method: req.method,
+    url: req.url,
+    timestamp: new Date().toISOString(),
   });
 });
 
