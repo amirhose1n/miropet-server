@@ -66,15 +66,6 @@ app.use("/api/products", productRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/category", categoryRoutes);
 
-// Health check endpoint
-app.get("/health", (req, res) => {
-  res.status(200).json({
-    status: "OK",
-    message: "MiroPet API is running",
-    timestamp: new Date().toISOString(),
-  });
-});
-
 // POST health endpoint for testing
 app.post("/health", (req, res) => {
   res.status(200).json({
