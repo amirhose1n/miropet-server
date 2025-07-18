@@ -15,13 +15,18 @@ jobs:
       - name: Deploy to Ubuntu Server
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.PORT }}
+          host: 37.32.11.193
+          username: ubuntu
+          key: b3BlbnNzaC1rZXktdjEAAAAACmFlczI1Ni1jdHIAAAAGYmNyeXB0AAAAGAAAABCQpWSzNd
+ayIpJsa2MUVkyUAAAAGAAAAAEAAAAzAAAAC3NzaC1lZDI1NTE5AAAAIMus0+nzUyZZL0hG
+VieUJS16OjzII1udafG8romhFJACAAAAoEPmLGCyd7Q3RBIoYn12S34nOisogdB8opoy6k
+3c/KjzhuX6nz7YvzrAcvs/6jo4UBScJboqm7zNlwubkWIhZiafCdOh4JPE7NAzyEDqr8ez
+MNp61LCTRLsv38lwaGMFR4c3Lndj39Fj045Ybm3s+35rOcl3ZI+aW8eVOHop0X+2BXa5Uc
+G2DTdCEuAmYR+Suse8wD+plOu4fETU696fPAI=
+          port: 22
           script: |
             # Navigate to project directory
-            cd /home/${{ secrets.USERNAME }}/miropet-server
+            cd /home/ubuntu/projects/miropet-server
 
             # Pull latest changes
             git pull origin development
