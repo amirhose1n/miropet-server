@@ -75,6 +75,14 @@ app.get("/health", (req, res) => {
   });
 });
 
+app.post("/health", (req, res) => {
+  res.status(200).json({
+    status: "OK",
+    message: "MiroPet API is running",
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Error handling middleware
 app.use(errorHandler);
 
