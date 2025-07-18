@@ -104,6 +104,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const user = await User.findOne({ email });
 
     if (!user) {
+      console.log(`Login failed: User not found for email ${email}`);
       res.status(401).json({
         success: false,
         message: "Invalid email or password",
@@ -111,10 +112,11 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Check password
+// Check password
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
 
     if (!isPasswordValid) {
+      console.log(`Login failed: Invalid password for email ${email}`);
       res.status(401).json({
         success: false,
         message: "Invalid email or password",
