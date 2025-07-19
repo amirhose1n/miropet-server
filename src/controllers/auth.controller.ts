@@ -77,10 +77,35 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     });
     return;
   } catch (error) {
+    console.error("Registration error:", error);
+
+    // Handle different types of errors
+    let errorMessage = "Registration failed";
+    let errorDetails = null;
+
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      if (process.env.NODE_ENV === "development") {
+        errorDetails = {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+        };
+      }
+    } else if (typeof error === "object" && error !== null) {
+      // Handle custom error objects
+      if ("message" in error) {
+        errorMessage = (error as any).message;
+      }
+      if (process.env.NODE_ENV === "development") {
+        errorDetails = error;
+      }
+    }
+
     res.status(500).json({
       success: false,
-      message: "Registration failed",
-      error: process.env.NODE_ENV === "development" ? error : error,
+      message: errorMessage,
+      ...(process.env.NODE_ENV === "development" && { error: errorDetails }),
     });
   }
 };
@@ -107,7 +132,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       console.log(`Login failed: User not found for email ${email}`);
       res.status(401).json({
         success: false,
-        message: "Invalid email or passssssssssword",
+        message: "Invalid email or password",
       });
       return;
     }
@@ -199,10 +224,35 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     });
     return;
   } catch (error) {
+    console.error("Login error:", error);
+
+    // Handle different types of errors
+    let errorMessage = "Login failed";
+    let errorDetails = null;
+
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      if (process.env.NODE_ENV === "development") {
+        errorDetails = {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+        };
+      }
+    } else if (typeof error === "object" && error !== null) {
+      // Handle custom error objects
+      if ("message" in error) {
+        errorMessage = (error as any).message;
+      }
+      if (process.env.NODE_ENV === "development") {
+        errorDetails = error;
+      }
+    }
+
     res.status(500).json({
       success: false,
-      message: "Login failed",
-      error: process.env.NODE_ENV === "development" ? error : error,
+      message: errorMessage,
+      ...(process.env.NODE_ENV === "development" && { error: errorDetails }),
     });
     return;
   }
@@ -271,10 +321,34 @@ export const changePassword = async (
     });
   } catch (error) {
     console.error("Change password error:", error);
+
+    // Handle different types of errors
+    let errorMessage = "Failed to change password";
+    let errorDetails = null;
+
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      if (process.env.NODE_ENV === "development") {
+        errorDetails = {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+        };
+      }
+    } else if (typeof error === "object" && error !== null) {
+      // Handle custom error objects
+      if ("message" in error) {
+        errorMessage = (error as any).message;
+      }
+      if (process.env.NODE_ENV === "development") {
+        errorDetails = error;
+      }
+    }
+
     res.status(500).json({
       success: false,
-      message: "Failed to change password",
-      error: process.env.NODE_ENV === "development" ? error : undefined,
+      message: errorMessage,
+      ...(process.env.NODE_ENV === "development" && { error: errorDetails }),
     });
   }
 };
