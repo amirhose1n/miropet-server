@@ -67,7 +67,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/category", categoryRoutes);
 
 // POST health endpoint for testing
-app.post("/health", (req, res) => {
+app.get("/health", (req, res) => {
   res.status(200).json({
     status: "OK",
     message: "POST request to health endpoint is working",
