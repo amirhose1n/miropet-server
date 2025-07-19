@@ -75,11 +75,37 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         token,
       },
     });
+    return;
   } catch (error) {
+    console.error("Registration error:", error);
+
+    // Handle different types of errors
+    let errorMessage = "Registration failed";
+    let errorDetails = null;
+
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      if (process.env.NODE_ENV === "development") {
+        errorDetails = {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+        };
+      }
+    } else if (typeof error === "object" && error !== null) {
+      // Handle custom error objects
+      if ("message" in error) {
+        errorMessage = (error as any).message;
+      }
+      if (process.env.NODE_ENV === "development") {
+        errorDetails = error;
+      }
+    }
+
     res.status(500).json({
       success: false,
-      message: "Registration failed",
-      error: process.env.NODE_ENV === "development" ? error : undefined,
+      message: errorMessage,
+      ...(process.env.NODE_ENV === "development" && { error: errorDetails }),
     });
   }
 };
@@ -101,6 +127,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     // Find user by email
     const user = await User.findOne({ email });
+    console.error("Login error:", errors.array());
     if (!user) {
       console.log(`Login failed: User not found for email ${email}`);
       res.status(401).json({
@@ -110,8 +137,9 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-// Check password
+    // Check password
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+
     if (!isPasswordValid) {
       console.log(`Login failed: Invalid password for email ${email}`);
       res.status(401).json({
@@ -123,6 +151,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     // Generate JWT token
     const jwtSecret = process.env.JWT_SECRET;
+
     if (!jwtSecret) {
       throw createError("JWT secret not configured", 500);
     }
@@ -136,6 +165,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     // Merge guest cart if sessionId is provided
     let cartMerged = false;
+
     if (sessionId) {
       try {
         const { Cart } = await import("../models/Cart.model");
@@ -192,12 +222,39 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         cartMerged,
       },
     });
+    return;
   } catch (error) {
+    console.error("Login error:", error);
+
+    // Handle different types of errors
+    let errorMessage = "Login failed";
+    let errorDetails = null;
+
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      if (process.env.NODE_ENV === "development") {
+        errorDetails = {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+        };
+      }
+    } else if (typeof error === "object" && error !== null) {
+      // Handle custom error objects
+      if ("message" in error) {
+        errorMessage = (error as any).message;
+      }
+      if (process.env.NODE_ENV === "development") {
+        errorDetails = error;
+      }
+    }
+
     res.status(500).json({
       success: false,
-      message: "Login failed",
-      error: process.env.NODE_ENV === "development" ? error : undefined,
+      message: errorMessage,
+      ...(process.env.NODE_ENV === "development" && { error: errorDetails }),
     });
+    return;
   }
 };
 
@@ -264,10 +321,34 @@ export const changePassword = async (
     });
   } catch (error) {
     console.error("Change password error:", error);
+
+    // Handle different types of errors
+    let errorMessage = "Failed to change password";
+    let errorDetails = null;
+
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      if (process.env.NODE_ENV === "development") {
+        errorDetails = {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+        };
+      }
+    } else if (typeof error === "object" && error !== null) {
+      // Handle custom error objects
+      if ("message" in error) {
+        errorMessage = (error as any).message;
+      }
+      if (process.env.NODE_ENV === "development") {
+        errorDetails = error;
+      }
+    }
+
     res.status(500).json({
       success: false,
-      message: "Failed to change password",
-      error: process.env.NODE_ENV === "development" ? error : undefined,
+      message: errorMessage,
+      ...(process.env.NODE_ENV === "development" && { error: errorDetails }),
     });
   }
 };

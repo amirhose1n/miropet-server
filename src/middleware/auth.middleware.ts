@@ -50,6 +50,7 @@ export const authenticateToken = async (
       success: false,
       message: "Invalid or expired token",
     });
+    return;
   }
 };
 

@@ -33,12 +33,13 @@ export const getImageKitAuth = async (
       expire,
       signature,
     });
+    return;
   } catch (error: any) {
-    console.error("ImageKit auth error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to generate authentication parameters",
       error: error.message,
     });
+    return;
   }
 };

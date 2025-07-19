@@ -25,7 +25,14 @@ const PORT = process.env.PORT || 3001;
 
 // Security middleware
 app.use(helmet());
-app.use(cors());
+app.use(
+  cors({
+    origin: "*", // Allow all origins
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    credentials: true,
+  })
+);
 
 // Rate limiting
 const limiter = rateLimit({
@@ -59,27 +66,36 @@ app.use("/api/products", productRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/category", categoryRoutes);
 
-// Health check endpoint
+// POST health endpoint for testing
 app.get("/health", (req, res) => {
   res.status(200).json({
     status: "OK",
-    message: "MiroPet API is running",
+    message: "POST request to health endpoint is working",
     timestamp: new Date().toISOString(),
+    method: "POST",
+    body: req.body,
   });
 });
 
 // Error handling middleware
 app.use(errorHandler);
 
-// 404 handler
+// 404 handler with debugging
 app.use("*", (req, res) => {
+  console.log(
+    `404 - Method: ${req.method}, URL: ${req.url}, Headers:`,
+    req.headers
+  );
   res.status(404).json({
     success: false,
     message: "Route not found",
+    method: req.method,
+    url: req.url,
+    timestamp: new Date().toISOString(),
   });
 });
 
-app.listen(PORT, () => {
+app.listen(Number(PORT), "0.0.0.0", () => {
   console.log(`🚀 Server is running on port ${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/health`);
+  console.log(`📊 Health check: http://0.0.0.0:${PORT}/health`);
 });
