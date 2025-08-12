@@ -77,6 +77,16 @@ app.get("/health", (req, res) => {
   });
 });
 
+app.post("/health", (req, res) => {
+  res.status(200).json({
+    status: "OK",
+    message: "POST request to health endpoint is working",
+    timestamp: new Date().toISOString(),
+    method: "POST",
+    body: req.body,
+  });
+});
+
 // Error handling middleware
 app.use(errorHandler);
 
