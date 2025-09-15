@@ -1,25 +1,38 @@
 import { Router } from "express";
 import {
-  changePassword,
-  login,
-  register,
+  logout,
+  refreshToken,
+  sendOTP,
+  updateProfile,
+  verifyOTP,
 } from "../controllers/auth.controller";
 import { auth } from "../middleware/auth.middleware";
 import {
-  validateChangePassword,
-  validateLogin,
-  validateRegister,
+  validateLogout,
+  validateRefreshToken,
+  validateSendOTP,
+  validateUpdateProfile,
+  validateVerifyOTP,
 } from "../middleware/validation.middleware";
 
 const router = Router();
 
-// POST /api/auth/register
-router.post("/register", validateRegister, register);
+// OTP-based authentication flow
+// POST /api/auth/send-otp
+router.post("/send-otp", validateSendOTP, sendOTP);
 
-// POST /api/auth/login
-router.post("/login", validateLogin, login);
+// POST /api/auth/verify-otp
+router.post("/verify-otp", validateVerifyOTP, verifyOTP);
 
-// POST /api/auth/change-password
-router.post("/change-password", auth, validateChangePassword, changePassword);
+// Token management
+// POST /api/auth/refresh-token
+router.post("/refresh-token", validateRefreshToken, refreshToken);
+
+// POST /api/auth/logout
+router.post("/logout", auth, validateLogout, logout);
+
+// User profile management
+// POST /api/auth/update-profile
+router.post("/update-profile", auth, validateUpdateProfile, updateProfile);
 
 export default router;

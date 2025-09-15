@@ -53,6 +53,10 @@ export const validateProduct: ValidationChain[] = [
     .trim()
     .isLength({ max: 100 })
     .withMessage("Brand must not exceed 100 characters"),
+  body("sku")
+    .trim()
+    .isLength({ min: 1, max: 200 })
+    .withMessage("SKU is required and must be between 1 and 200 characters"),
   body("variations")
     .isArray({ min: 1 })
     .withMessage("At least one variation is required"),
@@ -118,4 +122,91 @@ export const validateAdminCreation = [
     .withMessage("نام باید بین ۲ تا ۵۰ کاراکتر باشد")
     .notEmpty()
     .withMessage("نام برای کاربران مدیر الزامی است"),
+];
+
+// OTP validation rules
+export const validateSendOTP: ValidationChain[] = [
+  body("phone")
+    .trim()
+    .notEmpty()
+    .withMessage("شماره موبایل الزامی است")
+    .custom((value) => {
+      // Remove any non-digit characters
+      const cleanPhone = value.replace(/\D/g, "");
+
+      // Check if it's a valid Iranian mobile number
+      const iranianMobileRegex = /^09\d{9}$/;
+      const iranianMobileWithCountryCodeRegex = /^(\+98|98)9\d{9}$/;
+
+      if (
+        !iranianMobileRegex.test(cleanPhone) &&
+        !iranianMobileWithCountryCodeRegex.test(cleanPhone)
+      ) {
+        throw new Error(
+          "شماره موبایل باید در فرمت صحیح ایرانی باشد (مثال: 09123456789)"
+        );
+      }
+
+      return true;
+    }),
+];
+
+export const validateVerifyOTP: ValidationChain[] = [
+  body("phone")
+    .trim()
+    .notEmpty()
+    .withMessage("شماره موبایل الزامی است")
+    .custom((value) => {
+      const cleanPhone = value.replace(/\D/g, "");
+      const iranianMobileRegex = /^09\d{9}$/;
+      const iranianMobileWithCountryCodeRegex = /^(\+98|98)9\d{9}$/;
+
+      if (
+        !iranianMobileRegex.test(cleanPhone) &&
+        !iranianMobileWithCountryCodeRegex.test(cleanPhone)
+      ) {
+        throw new Error("شماره موبایل باید در فرمت صحیح ایرانی باشد");
+      }
+
+      return true;
+    }),
+  body("otp")
+    .trim()
+    .isLength({ min: 5, max: 5 })
+    .withMessage("کد تایید باید ۵ رقم باشد")
+    .isNumeric()
+    .withMessage("کد تایید باید فقط شامل اعداد باشد"),
+  body("name")
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage("نام باید بین ۲ تا ۵۰ کاراکتر باشد"),
+  body("sessionId")
+    .optional()
+    .isString()
+    .withMessage("Session ID باید رشته باشد"),
+];
+
+export const validateUpdateProfile: ValidationChain[] = [
+  body("name")
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage("نام باید بین ۲ تا ۵۰ کاراکتر باشد"),
+  body("email")
+    .optional()
+    .isEmail()
+    .normalizeEmail()
+    .withMessage("ایمیل باید معتبر باشد"),
+];
+
+export const validateRefreshToken: ValidationChain[] = [
+  body("refreshToken").notEmpty().withMessage("Refresh token is required"),
+];
+
+export const validateLogout: ValidationChain[] = [
+  body("refreshToken")
+    .optional()
+    .isString()
+    .withMessage("Refresh token must be a string"),
 ];

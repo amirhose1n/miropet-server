@@ -1,12 +1,14 @@
-import bcrypt from "bcryptjs";
 import { Request, Response } from "express";
 import { validationResult } from "express-validator";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { createError } from "../middleware/error.middleware";
+import { OTPSession } from "../models/OTPSession.model";
 import { User } from "../models/User.model";
-import { generateToken } from "../utils/jwt.utils";
+import { smsService } from "../services/sms.service";
+import { generateTokenPair } from "../utils/jwt.utils";
 
-export const register = async (req: Request, res: Response): Promise<void> => {
+// Send OTP to phone number
+export const sendOTP = async (req: Request, res: Response): Promise<void> => {
   try {
     // Check for validation errors
     const errors = validationResult(req);
@@ -19,68 +21,78 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const { name, email, password } = req.body;
+    const { phone } = req.body;
 
-    // Only allow customer registration through this endpoint
-    const role = "customer";
+    // Check if there's already an active OTP session for this phone
+    const existingSession = await OTPSession.findOne({
+      phone,
+      isUsed: false,
+      expiresAt: { $gt: new Date() },
+    });
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    if (existingSession) {
+      // Check if user has exceeded attempt limit
+      if (existingSession.attempts >= 3) {
+        res.status(429).json({
+          success: false,
+          message:
+            "تعداد تلاش‌های مجاز برای این شماره تمام شده است. لطفاً کمی صبر کنید.",
+        });
+        return;
+      }
+
+      // Check if less than 1 minute has passed since last OTP
+      const timeDiff = Date.now() - existingSession.createdAt.getTime();
+      if (timeDiff < 60000) {
+        // 1 minute
+        const remainingTime = Math.ceil((60000 - timeDiff) / 1000);
+        res.status(429).json({
+          success: false,
+          message: `لطفاً ${remainingTime} ثانیه دیگر تلاش کنید.`,
+        });
+        return;
+      }
+    }
+
+    // Send OTP using SMS service
+    const smsResult = await smsService.sendOTP(phone);
+
+    if (!smsResult.success) {
       res.status(400).json({
         success: false,
-        message: "کاربر با این ایمیل قبلا ثبت نام کرده است",
+        message: smsResult.message,
       });
       return;
     }
 
-    // Hash password
-    const saltRounds = 12;
-    const passwordHash = await bcrypt.hash(password, saltRounds);
+    // Store OTP session in database
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
 
-    // Create user
-    const user = new User({
-      name,
-      email,
-      passwordHash,
-      role,
+    // Delete any existing sessions for this phone
+    await OTPSession.deleteMany({ phone, isUsed: false });
+
+    const otpSession = new OTPSession({
+      phone,
+      otp: smsResult.otp!,
+      expiresAt,
+      attempts: 0,
+      isUsed: false,
     });
 
-    await user.save();
+    await otpSession.save();
 
-    // Generate JWT token
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      throw createError("JWT secret not configured", 500);
-    }
-
-    const payload = { userId: String(user._id) };
-    const token = generateToken(
-      payload,
-      jwtSecret,
-      process.env.JWT_EXPIRES_IN || "7d"
-    );
-
-    res.status(201).json({
+    res.status(200).json({
       success: true,
-      message: "Customer registered successfully",
+      message: smsResult.message,
       data: {
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          createdAt: user.createdAt,
-        },
-        token,
+        phone,
+        expiresIn: 300, // 5 minutes in seconds
       },
     });
-    return;
   } catch (error) {
-    console.error("Registration error:", error);
+    console.error("Send OTP error:", error);
 
-    // Handle different types of errors
-    let errorMessage = "Registration failed";
+    let errorMessage = "خطا در ارسال کد تایید";
     let errorDetails = null;
 
     if (error instanceof Error) {
@@ -93,7 +105,6 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         };
       }
     } else if (typeof error === "object" && error !== null) {
-      // Handle custom error objects
       if ("message" in error) {
         errorMessage = (error as any).message;
       }
@@ -110,9 +121,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export const login = async (req: Request, res: Response): Promise<void> => {
+export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
   try {
-    // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       res.status(400).json({
@@ -123,45 +133,84 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const { email, password, sessionId } = req.body;
+    const { phone, otp, name, sessionId } = req.body;
 
-    // Find user by email
-    const user = await User.findOne({ email });
-    console.error("Login error:", errors.array());
+    const otpSession = await OTPSession.findOne({
+      phone,
+      isUsed: false,
+      expiresAt: { $gt: new Date() },
+    });
+
+    if (!otpSession) {
+      res.status(400).json({
+        success: false,
+        message:
+          "کد تایید منقضی شده یا وجود ندارد. لطفاً مجدداً درخواست کد دهید.",
+      });
+      return;
+    }
+
+    // Check attempt limit
+    if (otpSession.attempts >= 3) {
+      res.status(429).json({
+        success: false,
+        message:
+          "تعداد تلاش‌های مجاز تمام شده است. لطفاً مجدداً درخواست کد دهید.",
+      });
+      return;
+    }
+
+    // Verify OTP
+    if (otpSession.otp !== otp) {
+      // Increment attempts
+      otpSession.attempts += 1;
+      await otpSession.save();
+
+      res.status(400).json({
+        success: false,
+        message: "کد تایید اشتباه است",
+        remainingAttempts: 3 - otpSession.attempts,
+      });
+      return;
+    }
+
+    // OTP is correct, mark as used
+    otpSession.isUsed = true;
+    await otpSession.save();
+
+    // Find or create user
+    let user = await User.findOne({ phone });
+
     if (!user) {
-      console.log(`Login failed: User not found for email ${email}`);
-      res.status(401).json({
-        success: false,
-        message: "Invalid email or password",
+      // Create new user
+      user = new User({
+        phone,
+        name: name || null,
+        role: "customer",
+        isPhoneVerified: true,
       });
-      return;
+      await user.save();
+    } else {
+      // Update existing user
+      user.isPhoneVerified = true;
+      if (name && !user.name) {
+        user.name = name;
+      }
+      await user.save();
     }
 
-    // Check password
-    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
-
-    if (!isPasswordValid) {
-      console.log(`Login failed: Invalid password for email ${email}`);
-      res.status(401).json({
-        success: false,
-        message: "Invalid email or password",
-      });
-      return;
-    }
-
-    // Generate JWT token
+    // Generate JWT token pair
     const jwtSecret = process.env.JWT_SECRET;
-
     if (!jwtSecret) {
       throw createError("JWT secret not configured", 500);
     }
 
     const payload = { userId: String(user._id) };
-    const token = generateToken(
-      payload,
-      jwtSecret,
-      process.env.JWT_EXPIRES_IN || "7d"
-    );
+    const { accessToken, refreshToken } = generateTokenPair(payload, jwtSecret);
+
+    // Store refresh token in user document
+    user.refreshTokens.push(refreshToken);
+    await user.save();
 
     // Merge guest cart if sessionId is provided
     let cartMerged = false;
@@ -209,25 +258,27 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     res.status(200).json({
       success: true,
-      message: "Login successful",
+      message: "ورود با موفقیت انجام شد",
       data: {
         user: {
           id: user._id,
           name: user.name,
+          phone: user.phone,
           email: user.email,
           role: user.role,
+          isPhoneVerified: user.isPhoneVerified,
           createdAt: user.createdAt,
         },
-        token,
+        accessToken,
+        refreshToken,
         cartMerged,
+        isNewUser: !user.name, // Indicates if this is a new user who needs to complete profile
       },
     });
-    return;
   } catch (error) {
-    console.error("Login error:", error);
+    console.error("Verify OTP error:", error);
 
-    // Handle different types of errors
-    let errorMessage = "Login failed";
+    let errorMessage = "خطا در تایید کد";
     let errorDetails = null;
 
     if (error instanceof Error) {
@@ -240,7 +291,6 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         };
       }
     } else if (typeof error === "object" && error !== null) {
-      // Handle custom error objects
       if ("message" in error) {
         errorMessage = (error as any).message;
       }
@@ -254,11 +304,160 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       message: errorMessage,
       ...(process.env.NODE_ENV === "development" && { error: errorDetails }),
     });
-    return;
   }
 };
 
-export const changePassword = async (
+// Refresh access token
+export const refreshToken = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      res.status(401).json({
+        success: false,
+        message: "Refresh token is required",
+      });
+      return;
+    }
+
+    // Find user with this refresh token
+    const user = await User.findOne({ refreshTokens: refreshToken });
+    if (!user) {
+      res.status(401).json({
+        success: false,
+        message: "Invalid refresh token",
+      });
+      return;
+    }
+
+    // Generate new token pair
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw createError("JWT secret not configured", 500);
+    }
+
+    const payload = { userId: String(user._id) };
+    const { accessToken, refreshToken: newRefreshToken } = generateTokenPair(
+      payload,
+      jwtSecret
+    );
+
+    // Remove old refresh token and add new one
+    user.refreshTokens = user.refreshTokens.filter(
+      (token) => token !== refreshToken
+    );
+    user.refreshTokens.push(newRefreshToken);
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Token refreshed successfully",
+      data: {
+        accessToken,
+        refreshToken: newRefreshToken,
+      },
+    });
+  } catch (error) {
+    console.error("Refresh token error:", error);
+
+    let errorMessage = "خطا در تازه‌سازی توکن";
+    let errorDetails = null;
+
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      if (process.env.NODE_ENV === "development") {
+        errorDetails = {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+        };
+      }
+    } else if (typeof error === "object" && error !== null) {
+      if ("message" in error) {
+        errorMessage = (error as any).message;
+      }
+      if (process.env.NODE_ENV === "development") {
+        errorDetails = error;
+      }
+    }
+
+    res.status(500).json({
+      success: false,
+      message: errorMessage,
+      ...(process.env.NODE_ENV === "development" && { error: errorDetails }),
+    });
+  }
+};
+
+// Logout user (invalidate refresh token)
+export const logout = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!req.user) {
+      res.status(401).json({
+        success: false,
+        message: "User not authenticated",
+      });
+      return;
+    }
+
+    if (refreshToken) {
+      // Remove specific refresh token
+      req.user.refreshTokens = req.user.refreshTokens.filter(
+        (token) => token !== refreshToken
+      );
+      await req.user.save();
+    } else {
+      // Remove all refresh tokens (logout from all devices)
+      req.user.refreshTokens = [];
+      await req.user.save();
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "خروج با موفقیت انجام شد",
+    });
+  } catch (error) {
+    console.error("Logout error:", error);
+
+    let errorMessage = "خطا در خروج";
+    let errorDetails = null;
+
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      if (process.env.NODE_ENV === "development") {
+        errorDetails = {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+        };
+      }
+    } else if (typeof error === "object" && error !== null) {
+      if ("message" in error) {
+        errorMessage = (error as any).message;
+      }
+      if (process.env.NODE_ENV === "development") {
+        errorDetails = error;
+      }
+    }
+
+    res.status(500).json({
+      success: false,
+      message: errorMessage,
+      ...(process.env.NODE_ENV === "development" && { error: errorDetails }),
+    });
+  }
+};
+
+// Update user profile
+export const updateProfile = async (
   req: AuthRequest,
   res: Response
 ): Promise<void> => {
@@ -282,7 +481,7 @@ export const changePassword = async (
       return;
     }
 
-    const { currentPassword, newPassword } = req.body;
+    const { name, email } = req.body;
 
     // Find user
     const user = await User.findById(req.user._id);
@@ -294,36 +493,47 @@ export const changePassword = async (
       return;
     }
 
-    // Verify current password
-    const isCurrentPasswordValid = await bcrypt.compare(
-      currentPassword,
-      user.passwordHash
-    );
-    if (!isCurrentPasswordValid) {
-      res.status(400).json({
-        success: false,
-        message: "Current password is incorrect",
+    // Check if email is already taken by another user
+    if (email && email !== user.email) {
+      const existingUser = await User.findOne({
+        email,
+        _id: { $ne: user._id },
       });
-      return;
+      if (existingUser) {
+        res.status(400).json({
+          success: false,
+          message: "این ایمیل قبلاً استفاده شده است",
+        });
+        return;
+      }
     }
 
-    // Hash new password
-    const saltRounds = 12;
-    const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
+    // Update user fields
+    if (name !== undefined) user.name = name;
+    if (email !== undefined) user.email = email;
 
-    // Update password
-    user.passwordHash = newPasswordHash;
     await user.save();
 
     res.status(200).json({
       success: true,
-      message: "Password changed successfully",
+      message: "پروفایل با موفقیت به‌روزرسانی شد",
+      data: {
+        user: {
+          id: user._id,
+          name: user.name,
+          phone: user.phone,
+          email: user.email,
+          role: user.role,
+          isPhoneVerified: user.isPhoneVerified,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        },
+      },
     });
   } catch (error) {
-    console.error("Change password error:", error);
+    console.error("Update profile error:", error);
 
-    // Handle different types of errors
-    let errorMessage = "Failed to change password";
+    let errorMessage = "خطا در به‌روزرسانی پروفایل";
     let errorDetails = null;
 
     if (error instanceof Error) {
@@ -336,7 +546,6 @@ export const changePassword = async (
         };
       }
     } else if (typeof error === "object" && error !== null) {
-      // Handle custom error objects
       if ("message" in error) {
         errorMessage = (error as any).message;
       }

@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from "mongoose";
+import { generateUniqueSKU } from "../utils/sku.utils";
 
 export interface IVariation {
   color?: string;
@@ -18,6 +19,7 @@ export interface IProduct extends Document {
   variations: IVariation[];
   isFeatured: boolean;
   createdAt: Date;
+  sku: string;
   updatedAt?: Date;
 }
 
@@ -51,14 +53,36 @@ const productSchema = new Schema<IProduct>({
   brand: String,
   variations: [{ type: variationSchema, required: true }],
   isFeatured: { type: Boolean, default: false },
+  sku: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
   updatedAt: Date,
 });
 
-// Update the updatedAt field before saving
-productSchema.pre("save", function (next) {
-  this.updatedAt = new Date();
-  next();
+// Generate SKU before saving
+productSchema.pre("save", async function (next) {
+  try {
+    // Only generate SKU if it's not already set or if name/brand changed
+    if (!this.sku || this.isModified("name") || this.isModified("brand")) {
+      // Get all existing SKUs except current document
+      const existingProducts = await (this.constructor as any).find({}, "sku");
+      const existingSKUs = existingProducts
+        .map((p: any) => p.sku)
+        .filter((sku: string) => sku && sku !== this.sku);
+
+      // Generate unique SKU
+      this.sku = await generateUniqueSKU(
+        this.name,
+        this.brand,
+        existingSKUs,
+        this.sku
+      );
+    }
+
+    this.updatedAt = new Date();
+    next();
+  } catch (error) {
+    next(error as Error);
+  }
 });
 
 export const Product = mongoose.model<IProduct>("Product", productSchema);

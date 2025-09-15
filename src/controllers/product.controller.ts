@@ -87,7 +87,14 @@ export const getProductById = async (
   try {
     const { id } = req.params;
 
-    const product = await Product.findById(id);
+    // Try to find by SKU first, then by ID
+    let product = await Product.findOne({ sku: id });
+
+    if (!product) {
+      // If not found by SKU, try by ID
+      product = await Product.findById(id);
+    }
+
     if (!product) {
       res.status(404).json({
         success: false,
@@ -131,6 +138,7 @@ export const createProduct = async (
       description,
       category,
       brand,
+      sku,
       variations,
       isFeatured = false,
     } = req.body;
@@ -201,6 +209,7 @@ export const createProduct = async (
       description,
       category: Array.isArray(category) ? category : [category],
       brand,
+      sku,
       variations,
       isFeatured,
     });

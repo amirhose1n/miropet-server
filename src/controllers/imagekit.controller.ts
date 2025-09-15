@@ -18,7 +18,7 @@ export const getImageKitAuth = async (
     }
 
     const token = Date.now().toString();
-    const expire = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now in Unix seconds
+    const expire = Math.floor(Date.now() / 1000) + 1800; // 30 minutes from now in Unix seconds (less than 1 hour)
 
     // Create signature using HMAC-SHA1
     const stringToSign = token + expire;

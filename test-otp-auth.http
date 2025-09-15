@@ -1,0 +1,53 @@
+### Test OTP Authentication Flow with Refresh Tokens
+
+### 1. Send OTP to phone number
+POST http://localhost:3001/api/auth/send-otp
+Content-Type: application/json
+
+{
+  "phone": "09123456789"
+}
+
+### 2. Verify OTP (replace with actual OTP received)
+POST http://localhost:3001/api/auth/verify-otp
+Content-Type: application/json
+
+{
+  "phone": "09123456789",
+  "otp": "12345",
+  "name": "Test User"
+}
+
+### 3. Refresh access token
+POST http://localhost:3001/api/auth/refresh-token
+Content-Type: application/json
+
+{
+  "refreshToken": "YOUR_REFRESH_TOKEN_HERE"
+}
+
+### 4. Update user profile (requires authentication)
+POST http://localhost:3001/api/auth/update-profile
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "name": "Updated Name",
+  "email": "test@example.com"
+}
+
+### 5. Logout (invalidate refresh token)
+POST http://localhost:3001/api/auth/logout
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "refreshToken": "YOUR_REFRESH_TOKEN_HERE"
+}
+
+### 6. Logout from all devices (invalidate all refresh tokens)
+POST http://localhost:3001/api/auth/logout
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{}
